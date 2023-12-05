@@ -1,0 +1,364 @@
+--- CREATE STORED PROCEDURE IN A_BRAMNCH TABLE :
+
+CREATE OR REPLACE FUNCTION insert_a_branch()
+RETURNS TABLE (aa_id Integer,first_names character varying,last_names character varying,emp_salarys int)
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+BEGIN 
+  
+  RETURN QUERY SELECT a_id,first_name,last_name,emp_salary FROM a_branch;
+  END;
+  $BODY$;
+  
+  --- CREATE STORED PROCEDURE  IN PROJ_DETAILS TABLE :
+
+CREATE OR REPLACE FUNCTION insert_proj_details()
+RETURNS TABLE (proj_id Integer,project_names character varying)
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+BEGIN 
+  
+  RETURN QUERY SELECT pro_id,project_name FROM proj_details;
+  END;
+  $BODY$;
+  
+  
+  --- CREATE STORED PROCEDURE  IN EXAMPLE_TABLE  :
+
+CREATE OR REPLACE FUNCTION insert_example_table()
+RETURNS TABLE (emp_ids INTEGER ,
+    bigint_columns BIGINT,
+    smallint_columns SMALLINT,
+    varchar_columns CHARACTER VARYING,
+    text_columns TEXT,
+    timestamp_columns TIMESTAMP,
+    created_time_columns TIME,
+    modify_time_columns TIME,
+    unique_key_columns CHARACTER VARYING,
+    varchar_length_high_columns CHARACTER VARYING,
+    date_save_columns TIMESTAMP )
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+BEGIN 
+  
+  RETURN QUERY SELECT emp_id  ,
+    bigint_column,
+    smallint_column ,
+    varchar_column ,
+    text_column ,
+    timestamp_column ,
+    created_time_column ,
+    modify_time_column ,
+    unique_key_column ,
+    varchar_length_high_column ,
+    date_save_column  FROM example_table;
+  END;
+  $BODY$;
+  
+ SELECT * FROM  insert_example_table();
+ 
+ 
+ --- INSERT,UPDATE ,DELETE THE TABLE IN SINGLE STORED PROCEDURE:
+ 
+ CREATE OR REPLACE FUNCTION insert_update_delete_a_branch(
+    aa_id int, 
+    firsts_name character varying, 
+    lasts_name character varying, 
+    emps_salary int,
+    update_flag boolean DEFAULT false,
+    delete_flag boolean DEFAULT false)
+RETURNS TABLE (clear int, message character varying)
+LANGUAGE 'plpgsql'
+AS $BODY$
+DECLARE
+    clear integer := 0;
+    message character varying;
+BEGIN
+    IF update_flag THEN
+        UPDATE "a_branch"
+        SET first_name = 'Dinesh'
+        WHERE a_id = 22;
+
+        GET DIAGNOSTICS clear = ROW_COUNT;
+
+        IF clear > 0 THEN
+            message := 'Update Project Record Successfully';
+        ELSE
+            message := 'Project Record not found for update';
+        END IF;
+    ELSIF delete_flag THEN
+        DELETE FROM "a_branch"
+        WHERE a_id = 14;
+
+        GET DIAGNOSTICS clear = ROW_COUNT;
+
+        IF clear > 0 THEN
+            message := 'Delete PadsRecord Successfully';
+        ELSE
+            message := 'Record not found for delete';
+        END IF;
+    ELSE
+        INSERT INTO "a_branch" (a_id, first_name, last_name, emp_salary)
+        VALUES (aa_id, firsts_name, lasts_name, emps_salary);
+
+        clear := 1;
+        message := 'Insert PadsRecord Successfully';
+    END IF;
+
+    RETURN QUERY SELECT clear, message;
+
+END;
+$BODY$;
+
+SELECT * FROM insert_update_delete_a_branch(39, 'Jane', 'Smith', 60000);  ---INSERT
+
+SELECT * FROM insert_update_delete_a_branch(21, 'John', 'Doe', 50000, true);   --- UPDATE
+
+SELECT * FROM insert_update_delete_a_branch(21, NULL, NULL, NULL, false, true);   ---DELETE
+
+
+---FIND MAX AND MIN ,WHERE,LIKE,ORDERBY,LIMIT,HIGH SALARY 3,LOW SALARY 3:
+
+
+CREATE OR REPLACE FUNCTION a_branch_with_salary()
+RETURNS TABLE (
+    aa_id INTEGER,
+    first_names CHARACTER VARYING,
+    last_names CHARACTER VARYING,
+    emp_salarys INTEGER,
+    highest_salary INTEGER,
+    lowest_salary INTEGER)
+LANGUAGE 'plpgsql'
+AS $BODY$
+BEGIN
+    RETURN QUERY
+    SELECT
+        a_id,
+        first_name,
+        last_name,
+        emp_salary,
+        MAX(emp_salary) OVER () AS highest_salary,
+        MIN(emp_salary) OVER () AS lowest_salary
+    FROM a_branch
+	WHERE emp_salary > 60000 and  first_name LIKE'%a%'
+	ORDER BY emp_salary ASC
+	LIMIT 3;
+END;
+$BODY$;
+
+SELECT * FROM a_branch_with_salary();
+
+
+
+--- IF-ELSE :
+
+CREATE OR REPLACE FUNCTION Insert_A_Branch()
+RETURNS TABLE(aa_id int, firsts_name character varying, lasts_name character varying, emps_salary int)
+LANGUAGE 'plpgsql'
+AS $BODY$
+BEGIN 
+    IF EXISTS (SELECT 1 FROM public.a_branch WHERE emp_salary > 50000 AND first_name LIKE'%a%') THEN
+        RETURN QUERY SELECT a_id, first_name, last_name, emp_salary FROM public.a_branch WHERE emp_salary > 50000;
+    ELSE
+        RETURN QUERY SELECT a_id, first_name, last_name, emp_salary FROM public.a_branch WHERE emp_salary <= 50000;
+    END IF;
+END;
+$BODY$;
+
+SELECT * FROM  Insert_A_Branch();
+DROP FUNCTION Insert_A_Branch();
+
+
+
+--- JOIN QUERY 
+
+CREATE OR REPLACE FUNCTION join_a_branch()
+RETURNS TABLE (aa_id Integer,first_names character varying,last_names character varying,emp_salarys int,
+			  p_pro_id int, p_project_name character varying)
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+BEGIN 
+  
+  RETURN QUERY SELECT 
+  a.a_id,
+  a.first_name,
+  a.last_name,
+  a.emp_salary,
+  p.pro_id,
+  p.project_name FROM a_branch a
+  INNER  JOIN proj_details p on a.a_id = p.pro_id ;
+  END;
+  $BODY$;
+
+
+SELECT * FROM join_a_branch();
+
+---RENAME THE FUNCTION
+
+CREATE OR REPLACE FUNCTION new_insert_a_branch()
+RETURNS TABLE (aa_id Integer, first_names character varying, last_names character varying, emp_salarys int)
+LANGUAGE 'plpgsql'
+AS $BODY$
+BEGIN
+   RETURN QUERY SELECT a_id, first_name, last_name, emp_salary FROM a_branch;
+END;
+$BODY$;
+
+
+--- RENAME THE COLUMN NAME:
+
+CREATE OR REPLACE FUNCTION rename_insert_a_branch()
+RETURNS TABLE (aa_id Integer, first_names character varying, last_names character varying, emp_salarys int)
+LANGUAGE 'plpgsql'
+AS $BODY$
+BEGIN
+   RETURN QUERY SELECT a_id, first_name AS first_names, last_name, emp_salary FROM a_branch;
+END;
+$BODY$;
+
+SELECT * FROM new_insert_a_branch();
+
+
+
+
+
+
+
+----   
+
+CREATE OR REPLACE FUNCTION insert_update_delete_a_branch(
+    aa_id int, 
+    firsts_name character varying, 
+    lasts_name character varying, 
+    emps_salary int,
+    update_flag boolean DEFAULT false,
+    delete_flag boolean DEFAULT false)
+RETURNS TABLE (clear int, message character varying)
+LANGUAGE 'plpgsql'
+AS $BODY$
+DECLARE
+    clear integer := 0;
+    message character varying;
+BEGIN
+    IF update_flag THEN
+        UPDATE "a_branch"
+        SET first_name = firsts_name, last_name = lasts_name, emp_salary = emps_salary 
+        WHERE a_id = aa_id;
+
+        clear := 1;
+        message := 'Update a_branch Record Successfully';
+        
+    ELSIF delete_flag THEN
+        DELETE FROM "a_branch"
+        WHERE a_id = aa_id;
+
+        clear := 1;
+        message := 'Delete a_branch Record Successfully';
+        
+    ELSE
+        INSERT INTO "a_branch" (a_id, first_name, last_name, emp_salary)
+        VALUES (aa_id, firsts_name, lasts_name, emps_salary);
+
+        clear := 1;
+        message := 'Insert a_branch Record Successfully';
+    END IF;
+
+    RETURN QUERY SELECT clear, message;
+
+END;
+$BODY$;
+
+
+SELECT * FROM insert_update_delete_a_branch(36, 'Jane', 'Smith', 60000);  ---INSERT
+
+SELECT * FROM insert_update_delete_a_branch(33, 'dinesh', 'kumar', 50000, true);   --- UPDATE
+
+SELECT * FROM insert_update_delete_a_branch(36, NULL, NULL, NULL, false, true); 
+
+--- 
+
+CREATE OR REPLACE FUNCTION insert_a_branch()
+RETURNS TABLE (aa_id Integer,first_names character varying,last_names character varying,emp_salarys int)
+LANGUAGE 'plpgsql'
+AS $BODY$
+
+BEGIN 
+  
+  RETURN QUERY SELECT a_id,first_name,last_name,emp_salary FROM a_branch;
+  END;
+  $BODY$;
+  select first_names from insert_a_branch();
+  
+--- 
+
+
+CREATE OR REPLACE FUNCTION a_branch_with_salary(
+    min_salary_threshold INTEGER,
+    name_filter_pattern CHARACTER VARYING,
+    dynamic_high_salary INTEGER DEFAULT NULL,
+    dynamic_low_salary INTEGER DEFAULT NULL
+)
+RETURNS TABLE (
+    aa_id INTEGER,
+    first_names CHARACTER VARYING,
+    last_names CHARACTER VARYING,
+    emp_salarys INTEGER,
+    highest_salary INTEGER,
+    lowest_salary INTEGER)
+LANGUAGE 'plpgsql'
+AS $BODY$
+BEGIN
+    RETURN QUERY
+    SELECT
+        a_id,
+        first_name,
+        last_name,
+        emp_salary,
+        MAX(emp_salary) OVER () AS highest_salary,
+        MIN(emp_salary) OVER () AS lowest_salary
+    FROM a_branch
+    WHERE
+        emp_salary > min_salary_threshold
+        AND first_name LIKE name_filter_pattern
+        AND (dynamic_high_salary IS NULL OR emp_salary < dynamic_high_salary)
+        AND (dynamic_low_salary IS NULL OR emp_salary > dynamic_low_salary)
+    ORDER BY emp_salary ASC
+    LIMIT 3;
+END;
+$BODY$;
+
+SELECT * FROM a_branch_with_salary(40000, '%d%', 70000, 40000);
+
+
+---
+
+
+
+CREATE TABLE employee (
+    emp_id SERIAL PRIMARY KEY,
+    emp_name VARCHAR(255),
+    emp_salary VARCHAR(255)
+);
+
+INSERT INTO employee VALUES 
+    (1, 'dinesh', '60000'),
+    (2, 'rohit', '60000'),
+    (3, 'ram', '630000'),
+    (4, 'kumar', '40000'),
+    (5, 'siva', '60000'),
+    (6, 'rahul', '80000'),
+    (7, 'kumar', '0'),
+    (8, 'siva', ''),
+    (9, 'rahul', '80000'),
+    (10, 'abi', '');
+
+
+SELECT 
+    SUM(CASE WHEN emp_salary ~ E'^\\d+$' THEN CAST(emp_salary AS NUMERIC) ELSE 0 END) AS total_salary,
+    COUNT(emp_salary) AS salary_count
+FROM employee;
+
